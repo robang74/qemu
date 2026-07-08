@@ -9086,6 +9086,35 @@ static int do_execv(CPUArchState *cpu_env, int dirfd,
     }
 
     const char *exe = p;
+    if (is_execveat && (flags & AT_EMPTY_PATH)) {
+#if 0
+        fprintf(stderr, "\nRAF, execveat()> "
+            "flags: 0x%04u & 0x%04u, exe: '%s' (%p)\n",
+                flags, AT_EMPTY_PATH, exe?:"null", exe);
+        fprintf(stderr,   "RAF, execveat()> "
+            "dirfd: %d, argp[0]: '%s' (%p)\n",
+                dirfd, argp?argp[0]:"null", argp[0]);
+        #if 0
+        int fd = dup(dirfd);
+        if(fd) {
+            dirfd = fd;
+            fcntl(fd, F_SETFD, FD_CLOEXEC);
+        }
+        #endif
+        fprintf(stderr,   "RAF, execveat()> "
+            "envp[0]: '%s' (%p), dupfd: %d\n\n",
+                envp?envp[0]:"null", envp, dirfd);
+#endif
+/*
+ * RAF: the main cause of execveat() failure is the host trying
+ *      to access to "" by a guest address from which it reads
+ *      usually garbage instead of something expected like '\0'
+ *      but this bug doesn't happen on all the systems, because
+ *      some hardened Linux kernel configurations zeroed the mem
+ *      when it is allocated or -- securely -- after the free()
+ */
+        exe = "";
+    } else
     if (is_proc_myself(p, "exe")) {
         exe = real_exec_path;
     }
